@@ -46,7 +46,7 @@ function Login({ onSignUp, onLoginSuccess }) {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-bg-primary px-4 py-8 sm:px-6 lg:px-8">
+    <div className="login-page relative min-h-screen flex items-center justify-center bg-bg-primary px-4 py-8 sm:px-6 lg:px-8">
       <div className="absolute left-4 top-4 flex items-center gap-2 sm:left-6 sm:top-6" aria-label="Chate">
         <div className="relative flex h-9 w-9 items-center justify-center rounded-[13px] bg-accent shadow-lg shadow-indigo-900/30">
           <MessageCircle className="h-5 w-5 fill-white text-white" strokeWidth={2.2} />
