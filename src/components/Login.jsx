@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Lock, Mail, MessageCircle, Sparkles } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { loginUser } from '../services/authApi'
 import { saveAuthSession } from '../services/authStorage'
 
@@ -14,12 +15,16 @@ function Login({ onSignUp, onLoginSuccess }) {
     e.preventDefault()
 
     if (!email.trim()) {
-      setMessage({ type: 'error', text: 'Please enter your email address.' })
+      const errorMessage = 'Please enter your email address.'
+      setMessage({ type: 'error', text: errorMessage })
+      toast.error(errorMessage)
       return
     }
 
     if (!password) {
-      setMessage({ type: 'error', text: 'Please enter your password.' })
+      const errorMessage = 'Please enter your password.'
+      setMessage({ type: 'error', text: errorMessage })
+      toast.error(errorMessage)
       return
     }
 
@@ -40,6 +45,7 @@ function Login({ onSignUp, onLoginSuccess }) {
       onLoginSuccess()
     } catch (error) {
       setMessage({ type: 'error', text: error.message })
+      toast.error(error.message)
     } finally {
       setIsLoading(false)
     }
