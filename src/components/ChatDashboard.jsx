@@ -104,28 +104,40 @@ function ChatDashboard({ user, token, onLogout }) {
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState('')
   const socketRef = useRef(null)
+  const selectedIdRef = useRef(selectedId)
   const selectedConversation = useMemo(() => conversations.find(({ id }) => id === selectedId), [conversations, selectedId])
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId
+  }, [selectedId])
 
   useEffect(() => {
     const socket = createChatSocket(token)
     socketRef.current = socket
 
+    const joinSelectedRoom = () => {
+      if (selectedIdRef.current) socket.emit('join_room', selectedIdRef.current)
+    }
+
     const handleIncomingMessage = (payload) => {
       const incomingMessage = payload.message || payload
       const conversationId = payload.conversationId || incomingMessage.conversation
-      if (!conversationId || !incomingMessage?.id) return
+      const incomingMessageId = getId(incomingMessage)
+      if (!conversationId || !incomingMessageId) return
 
       setConversations((items) => items.map((item) => {
-        if (item.id !== conversationId || item.messages.some((message) => message.id === incomingMessage.id)) return item
+        if (item.id !== String(conversationId) || item.messages.some((message) => message.id === String(incomingMessageId))) return item
         const message = normalizeMessage(incomingMessage, currentUser.id)
-        return { ...item, lastMessage: message.text, time: message.time, messages: [...item.messages, message], messagesLoaded: true }
+        return { ...item, lastMessage: message.text, time: message.time, messages: [...item.messages, message] }
       }))
     }
 
+    socket.on('connect', joinSelectedRoom)
     socket.on('receive_message', handleIncomingMessage)
     socket.on('connect_error', () => setError('Live messaging is unavailable. REST messaging is still available.'))
 
     return () => {
+      socket.off('connect', joinSelectedRoom)
       socket.off('receive_message', handleIncomingMessage)
       socket.disconnect()
       socketRef.current = null
@@ -133,7 +145,7 @@ function ChatDashboard({ user, token, onLogout }) {
   }, [currentUser.id, token])
 
   useEffect(() => {
-    if (selectedId && socketRef.current) socketRef.current.emit('join_room', selectedId)
+    if (selectedId && socketRef.current?.connected) socketRef.current.emit('join_room', selectedId)
   }, [selectedId])
 
   const loadConversations = useCallback(async () => { setIsLoading(true); try { const data = await getConversations(token); setConversations((data.conversations || []).map((conversation) => normalizeConversation(conversation, currentUser.id))); setError('') } catch (loadError) { setError(loadError.message) } finally { setIsLoading(false) } }, [currentUser.id, token])
