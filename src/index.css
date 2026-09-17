@@ -26,3 +26,30 @@
 .animate-in {
   animation: chate-in 180ms ease-out both;
 }
+
+.chat-dashboard {
+  --color-bg-primary: #f5f7fb;
+  --color-bg-card: #ffffff;
+  --color-bg-input: #f8fafc;
+  --color-text-primary: #172033;
+  --color-text-secondary: #5b6578;
+  --color-text-muted: #7a8496;
+  --color-border-input: #dfe4ec;
+  --color-accent: #3157c8;
+  --color-accent-hover: #2748ac;
+}
+
+.chat-dashboard .shadow-xl,
+.chat-dashboard .shadow-2xl,
+.chat-dashboard .shadow-lg {
+  box-shadow: 0 8px 24px rgb(23 32 51 / 0.08);
+}
+
+.chat-dashboard .rounded-2xl,
+.chat-dashboard .rounded-3xl {
+  border-radius: 0.75rem;
+}
+
+.chat-dashboard .rounded-xl {
+  border-radius: 0.625rem;
+}
