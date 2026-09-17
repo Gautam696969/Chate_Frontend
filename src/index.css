@@ -53,3 +53,24 @@
 .chat-dashboard .rounded-xl {
   border-radius: 0.625rem;
 }
+
+.login-page {
+  --color-bg-primary: #f5f7fb;
+  --color-bg-card: #ffffff;
+  --color-bg-input: #f8fafc;
+  --color-text-primary: #172033;
+  --color-text-secondary: #5b6578;
+  --color-text-muted: #7a8496;
+  --color-border-input: #dfe4ec;
+  --color-accent: #3157c8;
+  --color-accent-hover: #2748ac;
+}
+
+.login-page .shadow-2xl {
+  box-shadow: 0 12px 32px rgb(23 32 51 / 0.1);
+}
+
+.login-page .rounded-2xl,
+.login-page .rounded-xl {
+  border-radius: 0.75rem;
+}

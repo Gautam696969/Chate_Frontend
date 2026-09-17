@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import Login from './components/Login'
 import Registration from './components/Registration'
 import ChatDashboard from './components/ChatDashboard'
@@ -22,12 +23,14 @@ function App() {
 
   const handleLoginSuccess = () => {
     setAuthSession(getAuthSession())
+    toast.success('Login successful')
     navigate('/chat')
   }
 
   const handleLogout = () => {
     clearAuthSession()
     setAuthSession({ token: null, user: null })
+    toast.success('You have been logged out')
     navigate('/')
   }
 
@@ -37,17 +40,17 @@ function App() {
     }
   }, [route, authSession.token])
 
-  if (route === '/chat' && authSession.token) {
-    return <ChatDashboard user={authSession.user} token={authSession.token} onLogout={handleLogout} />
-  }
-
   const showRegistration = route === '/register'
+  const page = route === '/chat' && authSession.token
+    ? <ChatDashboard user={authSession.user} token={authSession.token} onLogout={handleLogout} />
+    : showRegistration
+      ? <Registration onLogin={() => navigate('/')} />
+      : <Login onSignUp={() => navigate('/register')} onLoginSuccess={handleLoginSuccess} />
 
-  return showRegistration ? (
-    <Registration onLogin={() => navigate('/')} />
-  ) : (
-    <Login onSignUp={() => navigate('/register')} onLoginSuccess={handleLoginSuccess} />
-  )
+  return <>
+    <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+    {page}
+  </>
 }
 
 export default App

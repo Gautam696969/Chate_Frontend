@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, Lock, Mail, MessageCircle, Sparkles } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { loginUser } from '../services/authApi'
 import { saveAuthSession } from '../services/authStorage'
 
@@ -14,12 +15,16 @@ function Login({ onSignUp, onLoginSuccess }) {
     e.preventDefault()
 
     if (!email.trim()) {
-      setMessage({ type: 'error', text: 'Please enter your email address.' })
+      const errorMessage = 'Please enter your email address.'
+      setMessage({ type: 'error', text: errorMessage })
+      toast.error(errorMessage)
       return
     }
 
     if (!password) {
-      setMessage({ type: 'error', text: 'Please enter your password.' })
+      const errorMessage = 'Please enter your password.'
+      setMessage({ type: 'error', text: errorMessage })
+      toast.error(errorMessage)
       return
     }
 
@@ -40,13 +45,14 @@ function Login({ onSignUp, onLoginSuccess }) {
       onLoginSuccess()
     } catch (error) {
       setMessage({ type: 'error', text: error.message })
+      toast.error(error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-bg-primary px-4 py-8 sm:px-6 lg:px-8">
+    <div className="login-page relative min-h-screen flex items-center justify-center bg-bg-primary px-4 py-8 sm:px-6 lg:px-8">
       <div className="absolute left-4 top-4 flex items-center gap-2 sm:left-6 sm:top-6" aria-label="Chate">
         <div className="relative flex h-9 w-9 items-center justify-center rounded-[13px] bg-accent shadow-lg shadow-indigo-900/30">
           <MessageCircle className="h-5 w-5 fill-white text-white" strokeWidth={2.2} />
