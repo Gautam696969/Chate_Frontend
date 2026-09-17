@@ -6,6 +6,7 @@ import {
 import {
   createConversation, getConversations, getMessages, searchUsers, sendMessage,
 } from '../services/authApi'
+import { createChatSocket } from '../services/chatSocket'
 
 const avatarColors = ['bg-indigo-500', 'bg-rose-500', 'bg-amber-500', 'bg-emerald-500', 'bg-cyan-500']
 
@@ -102,14 +103,45 @@ function ChatDashboard({ user, token, onLogout }) {
   const [isMessagesLoading, setIsMessagesLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState('')
+  const socketRef = useRef(null)
   const selectedConversation = useMemo(() => conversations.find(({ id }) => id === selectedId), [conversations, selectedId])
+
+  useEffect(() => {
+    const socket = createChatSocket(token)
+    socketRef.current = socket
+
+    const handleIncomingMessage = (payload) => {
+      const incomingMessage = payload.message || payload
+      const conversationId = payload.conversationId || incomingMessage.conversation
+      if (!conversationId || !incomingMessage?.id) return
+
+      setConversations((items) => items.map((item) => {
+        if (item.id !== conversationId || item.messages.some((message) => message.id === incomingMessage.id)) return item
+        const message = normalizeMessage(incomingMessage, currentUser.id)
+        return { ...item, lastMessage: message.text, time: message.time, messages: [...item.messages, message], messagesLoaded: true }
+      }))
+    }
+
+    socket.on('receive_message', handleIncomingMessage)
+    socket.on('connect_error', () => setError('Live messaging is unavailable. REST messaging is still available.'))
+
+    return () => {
+      socket.off('receive_message', handleIncomingMessage)
+      socket.disconnect()
+      socketRef.current = null
+    }
+  }, [currentUser.id, token])
+
+  useEffect(() => {
+    if (selectedId && socketRef.current) socketRef.current.emit('join_room', selectedId)
+  }, [selectedId])
 
   const loadConversations = useCallback(async () => { setIsLoading(true); try { const data = await getConversations(token); setConversations((data.conversations || []).map((conversation) => normalizeConversation(conversation, currentUser.id))); setError('') } catch (loadError) { setError(loadError.message) } finally { setIsLoading(false) } }, [currentUser.id, token])
   useEffect(() => { loadConversations() }, [loadConversations])
 
   const selectConversation = async (id) => { setSelectedId(id); const conversation = conversations.find((item) => item.id === id); if (!conversation || conversation.messagesLoaded) return; setIsMessagesLoading(true); try { const data = await getMessages(token, id); setConversations((items) => items.map((item) => item.id === id ? { ...item, messages: (data.messages || []).map((message) => normalizeMessage(message, currentUser.id)), messagesLoaded: true } : item)); setError('') } catch (loadError) { setError(loadError.message) } finally { setIsMessagesLoading(false) } }
   const startConversation = async (selectedUser) => { setIsNewChatOpen(false); try { const data = await createConversation(token, selectedUser.id); const conversation = normalizeConversation(data.conversation, currentUser.id); setConversations((items) => items.some((item) => item.id === conversation.id) ? items : [conversation, ...items]); setSelectedId(conversation.id); setIsMessagesLoading(true); const messagesData = await getMessages(token, conversation.id); setConversations((items) => items.map((item) => item.id === conversation.id ? { ...item, messages: (messagesData.messages || []).map((message) => normalizeMessage(message, currentUser.id)), messagesLoaded: true } : item)); setError('') } catch (conversationError) { setError(conversationError.message) } finally { setIsMessagesLoading(false) } }
-  const handleSend = async (text) => { if (!selectedId || isSending) return; setIsSending(true); try { const data = await sendMessage(token, selectedId, text); const message = normalizeMessage(data.message, currentUser.id); setConversations((items) => items.map((item) => item.id === selectedId ? { ...item, lastMessage: message.text, time: message.time, messages: [...item.messages, message], messagesLoaded: true } : item)); setError('') } catch (sendError) { setError(sendError.message) } finally { setIsSending(false) } }
+  const handleSend = async (text) => { if (!selectedId || isSending) return; setIsSending(true); try { const data = await sendMessage(token, selectedId, text); const message = normalizeMessage(data.message, currentUser.id); setConversations((items) => items.map((item) => item.id === selectedId ? { ...item, lastMessage: message.text, time: message.time, messages: [...item.messages, message], messagesLoaded: true } : item)); socketRef.current?.emit('send_message', { conversationId: selectedId, message: data.message }); setError('') } catch (sendError) { setError(sendError.message) } finally { setIsSending(false) } }
   const handleModalError = useCallback((modalError) => setError(modalError.message), [])
 
   return <main className="chat-dashboard h-screen overflow-hidden bg-bg-primary text-text-primary"><div className="flex h-full w-full"><div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} h-full w-full md:w-auto`}><ChatSidebar currentUser={currentUser} conversations={conversations} selectedId={selectedId} search={search} onSearch={setSearch} onSelect={selectConversation} onNewChat={() => setIsNewChatOpen(true)} onLogout={onLogout} isLoading={isLoading} /></div><div className={`${selectedConversation ? 'flex' : 'hidden md:flex'} min-w-0 flex-1`}>{selectedConversation ? <ChatWindow conversation={selectedConversation} onBack={() => setSelectedId(null)} onSend={handleSend} isLoading={isMessagesLoading} isSending={isSending} /> : <EmptyChat />}</div></div>{error && <div role="alert" className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-red-400/30 bg-bg-card px-4 py-3 text-sm text-red-300 shadow-xl"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Dismiss error"><X className="h-4 w-4" /></button></div>}{isNewChatOpen && <NewChatModal token={token} currentUserId={currentUser.id} onClose={() => setIsNewChatOpen(false)} onSelect={startConversation} onError={handleModalError} />}</main>
